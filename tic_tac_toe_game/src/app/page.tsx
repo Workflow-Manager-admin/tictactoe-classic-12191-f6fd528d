@@ -1,101 +1,170 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+
+/**
+ * PUBLIC_INTERFACE
+ * Main Container for TicTacToe Classic (Next.js Page)
+ * - Two player mode: X and O take turns on the 3x3 grid.
+ * - Win/draw detection.
+ * - Turn indicator, centered grid, reset button.
+ * Theme: primary #fff, secondary #000, accent #2196f3, light layout.
+ */
+export default function TicTacToeClassic() {
+  // Initialize 3x3 grid with nulls
+  const emptyBoard = () => Array(3).fill(null).map(() => Array(3).fill(null));
+  const [board, setBoard] = useState(emptyBoard());
+  const [xIsNext, setXIsNext] = useState(true);
+  const [status, setStatus] = useState(null); // "X wins!", "O wins!", "Draw", or null
+
+  // Helper: checks for win/draw
+  const calculateStatus = (board) => {
+    const flat = board.flat();
+    // All win lines (rows, cols, diagonals)
+    const lines = [
+      // Rows
+      [ [0,0], [0,1], [0,2] ],
+      [ [1,0], [1,1], [1,2] ],
+      [ [2,0], [2,1], [2,2] ],
+      // Columns
+      [ [0,0], [1,0], [2,0] ],
+      [ [0,1], [1,1], [2,1] ],
+      [ [0,2], [1,2], [2,2] ],
+      // Diagonals
+      [ [0,0], [1,1], [2,2] ],
+      [ [0,2], [1,1], [2,0] ],
+    ];
+    for (const line of lines) {
+      const [a,b,c] = line;
+      const v = board[a[0]][a[1]];
+      if (v && v === board[b[0]][b[1]] && v === board[c[0]][c[1]]) {
+        return `${v} wins!`;
+      }
+    }
+    // Draw (all filled, no win)
+    if (flat.every(cell => cell)) {
+      return "Draw";
+    }
+    return null;
+  };
+
+  // Handle click on cell
+  const handleCellClick = (row, col) => {
+    if (board[row][col] || status) return; // Ignore if filled or finished
+    const newBoard = board.map((r, rIdx) => r.map((cell, cIdx) =>
+      (rIdx === row && cIdx === col) ? (xIsNext ? "X" : "O") : cell
+    ));
+    setBoard(newBoard);
+    const outcome = calculateStatus(newBoard);
+    setStatus(outcome);
+    setXIsNext(x => outcome ? x : !x);
+  };
+
+  // Reset game
+  const resetGame = () => {
+    setBoard(emptyBoard());
+    setXIsNext(true);
+    setStatus(null);
+  };
+
+  // Theme colors
+  const colors = {
+    primary: "#ffffff",
+    secondary: "#000000",
+    accent: "#2196f3",
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div
+      className="h-screen w-full flex items-center justify-center bg-[var(--background)]"
+      style={{ backgroundColor: colors.primary, color: colors.secondary }}
+    >
+      <div
+        className="flex flex-col items-center justify-center shadow-md px-6 py-8 rounded-lg"
+        style={{
+          background: "#fff",
+          minWidth: 320,
+          minHeight: 480,
+          border: `1px solid #eee`,
+        }}
+      >
+        {/* Player Turn Indicator */}
+        <div
+          data-testid="turn-indicator"
+          className="mb-8 text-lg sm:text-xl font-semibold"
+        >
+          {!status ? (
+            <span>
+              Turn:{" "}
+              <span
+                style={{
+                  color: colors.accent,
+                  fontWeight: 700,
+                }}
+              >
+                {xIsNext ? "X" : "O"}
+              </span>
+            </span>
+          ) : (
+            <span
+              className={`font-bold ${
+                status === "Draw"
+                  ? "text-gray-600"
+                  : "text-[var(--color-win)]"
+              }`}
+              style={{
+                color:
+                  status === "Draw"
+                    ? "#888"
+                    : colors.accent,
+              }}
+            >
+              {status}
+            </span>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        {/* Grid */}
+        <div
+          className="grid grid-cols-3 grid-rows-3 gap-3"
+          style={{ marginBottom: "2.5rem" }}
+          data-testid="tictactoe-board"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          {board.map((rowArr, row) =>
+            rowArr.map((cell, col) => (
+              <button
+                key={`${row}-${col}`}
+                type="button"
+                data-testid={`cell-${row}-${col}`}
+                aria-label={`Cell ${row} ${col}`}
+                onClick={() => handleCellClick(row, col)}
+                className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-3xl sm:text-4xl border border-gray-200 rounded-md font-bold shadow hover:shadow-lg transition-all focus:outline-none bg-[var(--background)]"
+                style={{
+                  backgroundColor: cell
+                    ? "#f9f9f9"
+                    : "#fff",
+                  color: cell === "X" ? colors.accent : ""
+                }}
+                disabled={!!cell || !!status}
+              >
+                {cell}
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Reset Button */}
+        <button
+          type="button"
+          onClick={resetGame}
+          className="mt-2 px-6 py-2 rounded-full bg-[#2196f3] text-white font-semibold shadow hover:bg-[#1c7cd6] transition"
+          style={{
+            backgroundColor: colors.accent,
+          }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          Reset Game
+        </button>
+      </div>
     </div>
   );
 }
